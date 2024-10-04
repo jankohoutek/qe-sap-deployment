@@ -9,11 +9,11 @@
 - name: Set hana crm facts
   ansible.builtin.set_fact:
     crm_maintainence_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
-    hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
-    hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
-    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
     hana_topology_clone: "{{ crm_conf_hana_show.stdout | regex_search('clone cln_SAPHanaTopology') }}"
+    stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
+    hana_topology_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaTopology') }}"
+    hana_resource_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms msl_SAPHana_') }}"
+    hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHana_') }}"
     ip_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_ip_') }}"
     ip_nc: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_socat_') }}"
     ip_grp: "{{ crm_conf_hana_show.stdout | regex_search('group g_ip_') }}"
@@ -25,6 +25,8 @@
 - name: Ensure maintainence mode is active
   ansible.builtin.command:
     cmd: crm configure property maintenance-mode=true
+  register: maint_mode_on
+  changed_when: maint_mode_on.rc != 0
   when: crm_maintainence_mode is false or crm_maintainence_mode == 'unknown'
 
 - name: Create HANA topology resource
@@ -41,6 +43,8 @@
       params
       SID="{{ sap_hana_install_sid }}"
       InstanceNumber="{{ sap_hana_install_instance_number }}"
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
     - hana_topology_resource | length == 0
@@ -55,6 +59,8 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
     - hana_topology_clone | length == 0
@@ -79,6 +85,8 @@
       PREFER_SITE_TAKEOVER="true"
       DUPLICATE_PRIMARY_TIMEOUT="7200"
       AUTOMATED_REGISTER="false"
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
     - hana_resource | length == 0
@@ -95,9 +103,11 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
-    - hana_clone | length == 0
+    - hana_resource_clone | length == 0
 
 - name: Configure colocation [aws]
   ansible.builtin.command:
@@ -107,6 +117,8 @@
       2000:
       rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started
       msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
     - ip_colo | length == 0
@@ -120,6 +132,8 @@
       4000:
       rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started
       msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
     - ip_colo | length == 0
@@ -133,6 +147,8 @@
       2000:
       cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
       msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
     - cluster_order | length == 0
@@ -153,6 +169,8 @@
 - name: Ensure maintainence mode is disabled
   ansible.builtin.command:
     cmd: crm configure property maintenance-mode=false
+  register: cmd_output # <- Registers the command output.
+  changed_when: cmd_output.rc != 0
   when:
     - is_primary
     - refreshed_crm_maintainence_mode is true or refreshed_crm_maintainence_mode == 'unknown'
@@ -161,6 +179,7 @@
   ansible.builtin.command:
     cmd: crm status
   register: reg_crm_status
+  changed_when: reg_crm_status.rc != 0
   when: is_primary
 
 - name: Cleanup if needed
@@ -168,6 +187,8 @@
     cmd: "crm resource cleanup {{ rsc_SAPHana }}"
   retries: 3
   delay: 10
+  register: reg_crm_status
+  changed_when: reg_crm_status.rc != 0
   when:
     - reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
     - is_primary

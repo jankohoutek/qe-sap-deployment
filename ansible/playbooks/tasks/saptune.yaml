@@ -70,12 +70,16 @@
 
 - name: Ensure no solution is currently applied
   ansible.builtin.command: "saptune solution revert {{ solution_configured }}"
+  register: cmd_saptune_revert_output # <- Registers the command output.
+  changed_when: cmd_saptune_revert_output.rc != 0
   when:
     - solution_configured != 'NONE'
     - verify.rc != 0
 
 - name: Ensure saptune solution is applied
   ansible.builtin.command: "saptune solution apply {{ saptune_solution }}"
+  register: cmd_saptune_apply_output # <- Registers the command output.
+  changed_when: cmd_saptune_apply_output.rc != 0
   when: verify.rc != 0
 
 - name: Ensure solution was successful
