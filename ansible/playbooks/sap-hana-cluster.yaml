@@ -45,7 +45,7 @@
         rsc_saphana: "rsc_SAPHana_{{ sap_hana_install_sid }}_HDB_{{ sap_hana_install_instance_number }}"
         ms_saphana: "msl_SAPHana_{{ sap_hana_install_sid }}_HDB_{{ sap_hana_install_instance_number }}"
       when:
-        - no use_sap_hana_sr_angi | bool
+        - not use_sap_hana_sr_angi | bool
 
     - name: Set HANA Angi vars
       ansible.builtin.set_fact:
