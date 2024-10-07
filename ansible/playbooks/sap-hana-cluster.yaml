@@ -21,7 +21,6 @@
     # Define some names in a central place
     rsc_socat: "rsc_socat_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
     rsc_saphana: "rsc_SAPHana_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
-    rsc_saphana_angi: "mst_SAPHanaController_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}"
 
   handlers:
     - name: Restart systemd daemon
@@ -40,6 +39,20 @@
 
     - name: Load SAP HANA variables
       ansible.builtin.include_vars: ./vars/hana_vars.yaml
+
+    - name: Set HANA var names
+      ansible.builtin.set_fact:
+        rsc_saphana: "rsc_SAPHana_{{ sap_hana_install_sid }}_HDB_{{ sap_hana_install_instance_number }}"
+        ms_saphana: "msl_SAPHana_{{ sap_hana_install_sid }}_HDB_{{ sap_hana_install_instance_number }}"
+      when:
+        - no use_sap_hana_sr_angi | bool
+
+    - name: Set HANA Angi vars
+      ansible.builtin.set_fact:
+        rsc_saphana: "rsc_SAPHanaController_{{ sap_hana_install_sid }}_HDB_{{ sap_hana_install_instance_number }}"
+        ms_saphana: "mst_SAPHanaController_{{ sap_hana_install_sid }}_HDB_{{ sap_hana_install_instance_number }}"
+      when:
+        - use_sap_hana_sr_angi | bool
 
   tasks:
     - name: Base Cluster Configuration [azure]
@@ -81,7 +94,7 @@
         cmd: >-
           crm resource
           refresh
-          msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+          {{ ms_saphana }}
       register: cmd_output # <- Registers the command output.
       changed_when: cmd_output.rc != 0
       when: is_primary
@@ -98,8 +111,9 @@
         cmd: >-
           crm resource
           maintenance
-          msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+          {{ ms_saphana }}
           off
       register: cmd_output # <- Registers the command output.
       changed_when: cmd_output.rc != 0
-      when: is_primary
+      when:
+        - is_primary

@@ -101,7 +101,7 @@
   ansible.builtin.command:
     cmd: >-
       crm configure ms
-      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      {{ ms_saphana }}
       {{ rsc_saphana }}
       meta
       notify="true"
@@ -117,11 +117,11 @@
     - hana_clone | length == 0
     - is_primary
 
-- name: Create HANA Controller resource
+- name: Create HANA Controller resource for angi
   ansible.builtin.command:
     cmd: >-
       crm configure primitive
-      {{ rsc_saphana_angi }}
+      {{ rsc_saphana }}
       ocf:suse:SAPHanaController
       operations
       $id="rsc_sap_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}-operations"
@@ -141,13 +141,14 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_controller_resource | length == 0
+    - is_primary
 
 - name: Create HANA Controller clone
   ansible.builtin.command:
     cmd: >-
       crm configure ms
-      mst_SAPHanaController_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      {{ rsc_saphana_angi }}
+      {{ ms_saphana }}
+      {{ rsc_saphana }}
       meta
       notify="true"
       clone-max="2"
@@ -161,6 +162,7 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_controller_clone | length == 0
+    - is_primary
 
 - name: Create HANA Filesystem resource
   ansible.builtin.command:
@@ -182,6 +184,7 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_filesystem_resource | length == 0
+    - is_primary
 
 - name: Create HANA Filesystem clone
   ansible.builtin.command:
@@ -200,6 +203,7 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_filesytem_clone | length == 0
+    - is_primary
 
 - name: Configure hana/IP colocation
   ansible.builtin.command:
@@ -208,26 +212,13 @@
       col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
       2000:
       rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started
-      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Master
+      {{ ms_saphana }}:Master
   register: cmd_crm_chipc_output
   changed_when: cmd_crm_chipc_output.rc != 0
   when:
-    - not use_sap_hana_sr_angi | bool
     - ip_colo | length == 0
+    - is_primary
 
-- name: Configure angi hana/IP colocation
-  ansible.builtin.command:
-    cmd: >-
-      crm configure colocation
-      col_saphana_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      2000:
-      rsc_ip_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}:Started
-      mst_SAPHanaController_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-  register: cmd_crm_chipc_output
-  changed_when: cmd_crm_chipc_output.rc != 0
-  when:
-    - use_sap_hana_sr_angi | bool
-    - ip_colo | length == 0
 
 - name: Configure cluster order
   ansible.builtin.command:
@@ -236,26 +227,12 @@
       ord_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
       2000:
       cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      msl_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
+      {{ ms_saphana }}
   register: cmd_crm_cco_output
   changed_when: cmd_crm_cco_output.rc != 0
   when:
-    - not use_sap_hana_sr_angi | bool
     - cluster_order | length == 0
-
-- name: Configure angi cluster order
-  ansible.builtin.command:
-    cmd: >-
-      crm configure order
-      ord_SAPHana_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      2000:
-      cln_SAPHanaTopology_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-      mst_SAPHanaController_HDB_{{ sap_hana_install_sid }}{{ sap_hana_install_instance_number }}
-  register: cmd_crm_cco_output
-  changed_when: cmd_crm_cco_output.rc != 0
-  when:
-    - use_sap_hana_sr_angi | bool
-    - cluster_order | length == 0
+    - is_primary
 
 - name: Wait for cluster to settle
   ansible.builtin.command:
@@ -271,16 +248,6 @@
     cmd: crm resource cleanup {{ rsc_saphana }}
   register: cmd_crm_rcl_output
   changed_when: cmd_crm_rcl_output.rc != 0
-  when:
-    - not use_sap_hana_sr_angi | bool
-
-- name: Cleanup angi
-  ansible.builtin.command:
-    cmd: crm resource cleanup {{ rsc_saphana_angi }}
-  register: cmd_crm_rcl_output
-  changed_when: cmd_crm_rcl_output.rc != 0
-  when:
-    - use_sap_hana_sr_angi | bool
 
 - name: Wait for cluster to settle
   ansible.builtin.command:
