@@ -136,15 +136,15 @@
             mode: '0440'
           loop:
             - {'regexp': '^#ANSIBLE MANAGED DOCUMENT', 'line': '#ANSIBLE MANAGED DOCUMENT - no manual edits!'}
-            - {'regexp': '^Cmnd_Alias SOK_SITEA', 'line': 'Cmnd_Alias SOK_SITEA = /usr/sbin/crm_attribute \
+            - {'regexp': '^Cmnd_Alias SOK_SITEA', 'line': 'Cmnd_Alias SOK_SITEA = /usr/sbin/crm_attribute >
             -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ primary_site }} -v SOK -t crm_config -s SAPHanaSR'}
-            - {'regexp': '^Cmnd_Alias SFAIL_SITEA ', 'line': 'Cmnd_Alias SFAIL_SITEA = /usr/sbin/crm_attribute \
+            - {'regexp': '^Cmnd_Alias SFAIL_SITEA ', 'line': 'Cmnd_Alias SFAIL_SITEA = /usr/sbin/crm_attribute >
             -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ primary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
-            - {'regexp': '^Cmnd_Alias SOK_SITEB', 'line': 'Cmnd_Alias SOK_SITEB = /usr/sbin/crm_attribute \
+            - {'regexp': '^Cmnd_Alias SOK_SITEB', 'line': 'Cmnd_Alias SOK_SITEB = /usr/sbin/crm_attribute >
             -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SOK -t crm_config -s SAPHanaSR'}
-            - {'regexp': '^Cmnd_Alias SFAIL_SITEB', 'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute \
+            - {'regexp': '^Cmnd_Alias SFAIL_SITEB', 'line': 'Cmnd_Alias SFAIL_SITEB = /usr/sbin/crm_attribute >
             -n hana_{{ sap_hana_install_sid | lower }}_site_srHook_{{ secondary_site }} -v SFAIL -t crm_config -s SAPHanaSR'}
-            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: \
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: >
             SOK_SITEA, SFAIL_SITEA, SOK_SITEB, SFAIL_SITEB'}
           when: not use_sap_hana_sr_angi | bool
 
@@ -159,8 +159,8 @@
             mode: '0440'
           loop:
             - {'regexp': '^#ANSIBLE MANAGED DOCUMENT', 'line': '#ANSIBLE MANAGED DOCUMENT - no manual edits!'}
-            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: \
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: >
             /usr/sbin/crm_attribute -n hana_{{ sap_hana_install_sid | lower }}_*'}
-            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: \
+            - {'regexp': '^{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD', 'line': '{{ sap_hana_install_sid | lower }}adm ALL=(ALL) NOPASSWD: >
             /usr/bin/SAPHanaSR-hookHelper --sid={{ sap_hana_install_sid | upper }} *'}
           when: use_sap_hana_sr_angi | bool
