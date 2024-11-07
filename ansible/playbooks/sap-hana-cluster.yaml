@@ -96,15 +96,15 @@
           crm resource
           refresh
           {{ ms_saphana }}
-      register: cmd_output # <- Registers the command output.
-      changed_when: cmd_output.rc != 0
+      register: cmd_crm_rrmss_output
+      changed_when: cmd_crm_rrmss_output.rc != 0
       when: is_primary
 
     - name: Wait for cluster to settle
       ansible.builtin.command:
         cmd: cs_wait_for_idle -s 5
-      register: cmd_output # <- Registers the command output.
-      changed_when: cmd_output.rc != 0
+      register: cmd_cwfi_output
+      changed_when: cmd_cwfi_output.rc != 0
       when: is_primary
 
     - name: MS Resource Maintenance off
@@ -114,6 +114,6 @@
           maintenance
           {{ ms_saphana }}
           off
-      register: cmd_output # <- Registers the command output.
-      changed_when: cmd_output.rc != 0
+      register: cmd_crm_rmms_output
+      changed_when: cmd_crm_rmms_output.rc != 0
       when: is_primary

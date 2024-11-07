@@ -27,6 +27,7 @@
   changed_when: false
 
 - name: Ensure maintainence mode is active
+  ansible.builtin.command:
     cmd: crm configure property maintenance-mode=true
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
@@ -215,6 +216,8 @@
       op monitor timeout="20" interval="10"
       op_params depth=0
       meta resource-stickiness=0
+  register: cmd_crm_cprs_output
+  changed_when: cmd_crm_cprs_output.rc != 0
   when: ip_nc | length == 0
 
 - name: Configure IP group
@@ -238,7 +241,7 @@
       {{ ms_saphana }}:Master
   register: cmd_crm_cchip_output
   changed_when: cmd_crm_cchip_output.rc != 0
-  when: 
+  when:
     - ip_colo | length == 0
     - is_primary
 
