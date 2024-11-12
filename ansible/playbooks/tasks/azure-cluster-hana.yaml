@@ -122,7 +122,7 @@
 - name: Create HANA resource clone
   ansible.builtin.command:
     cmd: >-
-      crm configure ms
+      crm configure clone
       {{ ms_saphana }}
       {{ rsc_saphanactl }}
       meta
@@ -132,8 +132,8 @@
       target-role="Started"
       interleave="true"
       maintenance="true"
-  register: cmd_crm_chc_output
-  changed_when: cmd_crm_chc_output.rc != 0
+  register: cmd_crm_chrc_output
+  changed_when: cmd_crm_chrc_output.rc != 0
   when:
     - hana_resource | length == 0
     - is_primary
@@ -170,8 +170,8 @@
       clone-max="2"
       clone-node-max="1"
       target-role="Started"
-       interleave="true"
-       maintenance="true"
+      interleave="true"
+      maintenance="true"
   register: cmd_crm_chfc_output
   changed_when: cmd_crm_chfc_output.rc != 0
   when:
