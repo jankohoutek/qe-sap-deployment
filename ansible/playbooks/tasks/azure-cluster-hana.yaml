@@ -26,12 +26,12 @@
   when: is_primary
   changed_when: false
 
-- name: Ensure maintainence mode is active
+- name: Ensure maintenance mode is active
   ansible.builtin.command:
     cmd: crm configure property maintenance-mode=true
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
-  when: crm_maintainence_mode is false or crm_maintainence_mode == 'unknown'
+  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
 
 - name: Set stonith-timeout [sdb]
   ansible.builtin.command:

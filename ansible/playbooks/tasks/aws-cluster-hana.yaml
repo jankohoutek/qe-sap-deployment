@@ -8,7 +8,7 @@
 
 - name: Set HANA crm facts
   ansible.builtin.set_fact:
-    crm_maintainence_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+    crm_maintenance_mode: "{{ (crm_conf_hana_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
     stonith_timeout: "{{ crm_conf_hana_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
     hana_resource: "{{ crm_conf_hana_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
     hana_clone: "{{ crm_conf_hana_show.stdout | regex_search('ms ms._SAPHanaCtl_') }}"
@@ -26,12 +26,12 @@
   when: is_primary
   changed_when: false
 
-- name: Ensure maintainence mode is active
+- name: Ensure maintenance mode is active
   ansible.builtin.command:
     cmd: crm configure property maintenance-mode=true
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
-  when: crm_maintainence_mode is false or crm_maintainence_mode == 'unknown'
+  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
 
 - name: Create HANA topology resource
   ansible.builtin.command:
@@ -230,14 +230,14 @@
 
 - name: Set crm facts
   ansible.builtin.set_fact:
-    refreshed_crm_maintainence_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
   changed_when: false
 
-- name: Ensure maintainence mode is disabled
+- name: Ensure maintenance mode is disabled
   ansible.builtin.command:
     cmd: crm configure property maintenance-mode=false
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
   when:
-    - (refreshed_crm_maintainence_mode is true ) or
-      (refreshed_crm_maintainence_mode == 'unknown')
+    - (refreshed_crm_maintenance_mode is true ) or
+      (refreshed_crm_maintenance_mode == 'unknown')
