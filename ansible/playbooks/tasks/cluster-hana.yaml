@@ -248,7 +248,7 @@
   retries: 3
   delay: 10
   register: cmd_crm_rcl_output
-  changed_when: .cmd_crm_rcl_output.rc != 0
+  changed_when: cmd_crm_rcl_output.rc != 0
   when:
     - final_reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
 
