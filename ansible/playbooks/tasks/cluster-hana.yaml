@@ -23,7 +23,6 @@
     cluster_order: "{{ crm_conf_show.stdout | regex_search('order ord_SAPHana_') }}"
     resource_stickiness: "{{ (crm_conf_show.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] }}"
     migration_threshold: "{{ (crm_conf_show.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
-  when: is_primary
   changed_when: false
 
 - name: Ensure maintenance mode is active
@@ -51,7 +50,6 @@
   changed_when: cmd_crm_chtr_output.rc != 0
   when:
     - hana_topology_resource | length == 0
-    - is_primary
 
 - name: Create HANA topology clone
   ansible.builtin.command:
@@ -67,7 +65,6 @@
   changed_when: cmd_crm_chtc_output.rc != 0
   when:
     - hana_topology_clone | length == 0
-    - is_primary
 
 - name: Create HANA resource
   ansible.builtin.command:
@@ -93,7 +90,6 @@
   changed_when: cmd_crm_chr_output.rc != 0
   when:
     - hana_resource | length == 0
-    - is_primary
 
 - name: Create HANA resource clone
   ansible.builtin.command:
@@ -112,7 +108,6 @@
   changed_when: cmd_crm_chrc_output.rc != 0
   when:
     - hana_resource | length == 0
-    - is_primary
 
 - name: Create HANA Filesystem resource
   ansible.builtin.command:
@@ -134,7 +129,6 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_filesystem_resource | length == 0
-    - is_primary
 
 - name: Create HANA Filesystem clone
   ansible.builtin.command:
@@ -153,7 +147,6 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_filesytem_clone | length == 0
-    - is_primary
 
 - name: Configure HANA/IP colocation [aws]
   ansible.builtin.command:
@@ -166,7 +159,6 @@
   register: cmd_crm_chipc_output
   changed_when: cmd_crm_chipc_output.rc != 0
   when:
-    - is_primary
     - ip_colo | length == 0
     - cloud_platform_is_aws
 
@@ -182,7 +174,6 @@
   changed_when: cmd_crm_cchip_output.rc != 0
   when:
     - ip_colo | length == 0
-    - is_primary
     - cloud_platform_is_gcp
 
 # Order configured as documentation for both AWS and GCP dictates
@@ -200,7 +191,6 @@
   changed_when: cmd_crm_co_output.rc != 0
   when:
     - cluster_order | length == 0
-    - is_primary
 
 - name: Wait for cluster to settle
   ansible.builtin.command:
@@ -251,7 +241,6 @@
     cmd: crm status
   register: final_reg_crm_status
   changed_when: final_reg_crm_status.rc != 0
-  when: is_primary
 
 - name: Cleanup if needed
   ansible.builtin.command:
@@ -262,7 +251,6 @@
   changed_when: .cmd_crm_rcl_output.rc != 0
   when:
     - final_reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
-    - is_primary
 
 # For debug purpose only
 - name: Get cluster status at the end
