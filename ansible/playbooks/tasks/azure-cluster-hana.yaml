@@ -127,7 +127,6 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
-      maintenance="true"
   register: cmd_crm_chrc_output
   changed_when: cmd_crm_chrc_output.rc != 0
   when:
@@ -165,7 +164,6 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
-      maintenance="true"
   register: cmd_crm_chfc_output
   changed_when: cmd_crm_chfc_output.rc != 0
   when:
@@ -245,8 +243,8 @@
       Optional:
       cln_SAPHanaTpg_{{ sap_hana_install_sid }}_HDB{{ sap_hana_install_instance_number }}
       {{ ms_saphana }}
-  register: cmd_crm_co_output
-  changed_when: cmd_crm_co_output.rc != 0
+  register: cmd_crm_cco_output
+  changed_when: cmd_crm_cco_output.rc != 0
   when:
     - cluster_order | length == 0
 
@@ -255,14 +253,35 @@
     cmd: crm configure rsc_defaults resource-stickiness=1000
   register: cmd_crm_crdrs_output
   changed_when: cmd_crm_crdrs_output.rc != 0
-  when: resource_stickiness != '1000'
+  when:
+    - resource_stickiness != '1000'
 
 - name: Ensure migration-threshold is configured
   ansible.builtin.command:
     cmd: crm configure rsc_defaults migration-threshold=5000
   register: cmd_crm_crdmt_output
   changed_when: cmd_crm_crdmt_output.rc != 0
-  when: migration_threshold != '1000'
+  when:
+    - migration_threshold != '1000'
+
+- name: Refresh cluster status
+  ansible.builtin.command:
+    cmd: crm configure show
+  register: refreshed_crm_conf_show
+  changed_when: false
+
+# Get current maintenance state
+- name: Set crm facts
+  ansible.builtin.set_fact:
+    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
+  changed_when: false
+
+- name: Ensure maintenance mode is disabled
+  ansible.builtin.command:
+    cmd: crm configure property maintenance-mode=false
+  register: cmd_crm_cpmm_output
+  changed_when: cmd_crm_cpmm_output.rc != 0
+  when: refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
 
 # Assume that hana resource needs a cleanup
 # There really should be a way of checking if this needs to be run!
@@ -282,6 +301,6 @@
 # For debug purpose only
 - name: Get cluster status at the end
   ansible.builtin.command:
-    cmd: crm configure show
-  register: refreshed_crm_conf_show
+    cmd: crm status full
+  register: final_crm_status_full
   changed_when: false
