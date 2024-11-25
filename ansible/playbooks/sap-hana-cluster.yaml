@@ -58,12 +58,14 @@
   tasks:
     - name: Base Cluster Configuration [azure]
       ansible.builtin.include_tasks: ./tasks/azure-cluster-bootstrap.yaml
-      when: cloud_platform_is_azure
+      when:
+        - cloud_platform_is_azure
       tags: bootstrap
 
     - name: Base Cluster Configuration [aws]
       ansible.builtin.include_tasks: ./tasks/cluster-bootstrap.yaml
-      when: cloud_platform_is_aws
+      when:
+        - cloud_platform_is_aws
       tags: bootstrap
 
     - name: Base Cluster Configuration [gcp]
@@ -90,22 +92,24 @@
         - cloud_platform_is_gcp
         - is_primary
 
-    - name: Refresh MS
+    - name: Cleanup MS resource
       ansible.builtin.command:
         cmd: >-
           crm resource
-          refresh
+          cleanup
           {{ ms_saphana }}
       register: cmd_crm_rrmss_output
       changed_when: cmd_crm_rrmss_output.rc != 0
-      when: is_primary
+      when:
+        - is_primary
 
     - name: Wait for cluster to settle
       ansible.builtin.command:
         cmd: cs_wait_for_idle -s 5
       register: cmd_cwfi_output
       changed_when: cmd_cwfi_output.rc != 0
-      when: is_primary
+      when:
+        - is_primary
 
     - name: MS Resource Maintenance off
       ansible.builtin.command:
@@ -113,7 +117,8 @@
           crm resource
           maintenance
           {{ ms_saphana }}
-          off
+          false
       register: cmd_crm_rmms_output
       changed_when: cmd_crm_rmms_output.rc != 0
-      when: is_primary
+      when:
+        - is_primary
