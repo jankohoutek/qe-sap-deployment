@@ -37,7 +37,7 @@
     - crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
     - is_primary
 
-- name: Set stonith-timeout [sdb]
+- name: Set stonith-timeout [sbd]
   ansible.builtin.command:
     cmd: >-
       crm configure
@@ -47,7 +47,7 @@
   changed_when: cmd_crm_cpst_output.rc != 0
   when:
     - stonith_timeout | length == 0
-    - use_sbd | bool
+    - not use_sbd | bool
 
 - name: Set stonith-timeout [azure fencing]
   ansible.builtin.command:
@@ -71,6 +71,18 @@
   changed_when: cmd_crm_cpse_output.rc != 0
   when:
     - stonith_enabled != 'true'
+
+ # see https://learn.microsoft.com/en-us/azure/sap/workloads/high-availability-guide-suse-pacemaker?tabs=msi#create-a-fencing-device-on-the-pacemaker-cluster
+- name: Enable concurrent fencing (native fencing)
+  ansible.builtin.command:
+    cmd: >-
+      crm configure
+      property
+      concurrent-fencing=true
+  register: cmd_crm_cpcf_output
+  changed_when: cmd_crm_cpcf_output.rc != 0
+  when:
+    - not use_sbd | bool
 
 - name: Create HANA topology resource
   ansible.builtin.command:
