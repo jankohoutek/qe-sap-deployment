@@ -46,7 +46,6 @@
   register: cmd_crm_cpst_output
   changed_when: cmd_crm_cpst_output.rc != 0
   when:
-    - is_primary
     - stonith_timeout | length == 0
     - use_sbd | bool
 
@@ -59,7 +58,6 @@
   register: cmd_crm_cpst_output
   changed_when: cmd_crm_cpst_output.rc != 0
   when:
-    - is_primary
     - stonith_timeout | length == 0
     - use_sbd | bool
 
@@ -73,7 +71,6 @@
   changed_when: cmd_crm_cpse_output.rc != 0
   when:
     - stonith_enabled != 'true'
-    - is_primary
 
 - name: Create HANA topology resource
   ansible.builtin.command:
@@ -94,7 +91,6 @@
   changed_when: cmd_crm_chtr_output.rc != 0
   when:
     - hana_topology_resource | length == 0
-    - is_primary
 
 - name: Create HANA topology clone
   ansible.builtin.command:
@@ -111,7 +107,6 @@
   changed_when: cmd_crm_chtc_output.rc != 0
   when:
     - hana_topology_clone | length == 0
-    - is_primary
 
 - name: Create HANA resource
   ansible.builtin.command:
@@ -137,7 +132,6 @@
   changed_when: cmd_crm_chr_output.rc != 0
   when:
     - hana_resource | length == 0
-    - is_primary
 
 - name: Create HANA resource clone
   ansible.builtin.command:
@@ -156,7 +150,6 @@
   changed_when: cmd_crm_chrc_output.rc != 0
   when:
     - hana_resource | length == 0
-    - is_primary
 
 - name: Create HANA Filesystem resource
   ansible.builtin.command:
@@ -179,7 +172,6 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_filesystem_resource | length == 0
-    - is_primary
 
 - name: Create HANA Filesystem clone
   ansible.builtin.command:
@@ -198,7 +190,6 @@
   when:
     - use_sap_hana_sr_angi | bool
     - hana_filesytem_clone | length == 0
-    - is_primary
 
 - name: Validate cluster IP
   vars:
@@ -208,7 +199,6 @@
     fail_msg: "The provided cluster IP address is not valid."
   when:
     - cluster_ip is defined
-    - is_primary
 
 - name: Create IP resource
   # cluster_ip is calculated by terraform in a similar way to hana ips,
@@ -229,7 +219,6 @@
   changed_when: cmd_crm_cpip_output.rc != 0
   when:
     - ip_resource | length == 0
-    - is_primary
 
 - name: Create socat resource
   ansible.builtin.command:
@@ -247,7 +236,6 @@
   changed_when: cmd_crm_cprs_output.rc != 0
   when:
     - ip_nc | length == 0
-    - is_primary
 
 - name: Configure IP group
   ansible.builtin.command:
@@ -261,7 +249,6 @@
   changed_when: cmd_crm_cgip_output.rc != 0
   when:
     - ip_grp | length == 0
-    - is_primary
 
 - name: Configure hana/IP colocation
   ansible.builtin.command:
@@ -276,7 +263,6 @@
   changed_when: cmd_crm_cchip_output.rc != 0
   when:
     - ip_colo | length == 0
-    - is_primary
 
 - name: Configure cluster order
   ansible.builtin.command:
@@ -291,31 +277,7 @@
   changed_when: cmd_crm_cco_output.rc != 0
   when:
     - cluster_order | length == 0
-    - is_primary
 
-- name: Ensure resource-stickiness is configured
-  ansible.builtin.command:
-    cmd: >-
-      crm configure
-      rsc_defaults
-      resource-stickiness=1000
-  register: cmd_crm_crdrs_output
-  changed_when: cmd_crm_crdrs_output.rc != 0
-  when:
-    - resource_stickiness != '1000'
-    - is_primary
-
-- name: Ensure migration-threshold is configured
-  ansible.builtin.command:
-    cmd: >-
-      crm configure
-      rsc_defaults
-      migration-threshold=5000
-  register: cmd_crm_crdmt_output
-  changed_when: cmd_crm_crdmt_output.rc != 0
-  when:
-    - migration_threshold != '1000'
-    - is_primary
 
 - name: Refresh cluster status
   ansible.builtin.command:
@@ -341,7 +303,12 @@
   changed_when: cmd_crm_cpmm_output.rc != 0
   when:
     - refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
-    - is_primary
+
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: >-
+      cs_wait_for_idle -s 5
+  changed_when: false
 
 
 # Assume that hana resource needs a cleanup
@@ -356,13 +323,31 @@
   register: cmd_crm_rcl_output
   changed_when:
     - cmd_crm_rcl_output.rc != 0
-    - is_primary
 
-# For debug purpose only
-- name: Get full cluster status at the end
+- name: Wait for cluster to settle
   ansible.builtin.command:
     cmd: >-
-      crm status
-      full
-  register: final_crm_status_full
+      cs_wait_for_idle -s 5
   changed_when: false
+
+- name: Ensure resource-stickiness is configured
+  ansible.builtin.command:
+    cmd: >-
+      crm configure
+      rsc_defaults
+      resource-stickiness=1000
+  register: cmd_crm_crdrs_output
+  changed_when: cmd_crm_crdrs_output.rc != 0
+  when:
+    - resource_stickiness != '1000'
+
+- name: Ensure migration-threshold is configured
+  ansible.builtin.command:
+    cmd: >-
+      crm configure
+      rsc_defaults
+      migration-threshold=5000
+  register: cmd_crm_crdmt_output
+  changed_when: cmd_crm_crdmt_output.rc != 0
+  when:
+    - migration_threshold != '1000'

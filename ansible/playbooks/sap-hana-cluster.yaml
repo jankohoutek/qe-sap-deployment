@@ -92,7 +92,7 @@
         - cloud_platform_is_gcp
         - is_primary
 
-    - name: Cleanup MS resource
+    - name: Clean up MS resource
       ansible.builtin.command:
         cmd: >-
           crm resource
@@ -103,7 +103,7 @@
       when:
         - is_primary
 
-    - name: Wait for cluster to settle
+    - name: Wait for cluster to be settled
       ansible.builtin.command:
         cmd: cs_wait_for_idle -s 5
       register: cmd_cwfi_output
@@ -122,3 +122,12 @@
       changed_when: cmd_crm_rmms_output.rc != 0
       when:
         - is_primary
+
+    # For debug purpose only
+    - name: Full cluster status at the end of deployment
+      ansible.builtin.command:
+        cmd: >-
+          crm status
+          full
+      register: final_crm_status_full
+      changed_when: false
