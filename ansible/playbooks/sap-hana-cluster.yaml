@@ -125,9 +125,9 @@
       register: cmd_crm_cpmm_output
       changed_when: cmd_crm_cpmm_output.rc != 0
       when:
-        - (refreshed_crm_maintenance_mode is true ) or
-          (refreshed_crm_maintenance_mode == 'on') or
-          (refreshed_crm_maintenance_mode == 'unknown')
+        - (crm_maintenance_mode is true ) or
+          (crm_maintenance_mode == 'on') or
+          (crm_maintenance_mode == 'unknown')
         - is_primary
 
     - name: Clean up MS resource

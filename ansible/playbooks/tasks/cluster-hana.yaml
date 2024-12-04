@@ -31,9 +31,9 @@
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
   when:
-    - (refreshed_crm_maintenance_mode is false ) or
-      (refreshed_crm_maintenance_mode == 'off') or
-      (refreshed_crm_maintenance_mode == 'unknown')
+    - (crm_maintenance_mode is false ) or
+      (crm_maintenance_mode == 'off') or
+      (crm_maintenance_mode == 'unknown')
 
 - name: Create HANA topology resource
   ansible.builtin.command:
