@@ -27,7 +27,7 @@
 
 - name: Ensure maintenance mode is active
   ansible.builtin.command:
-    cmd: crm configure property maintenance-mode=true
+    cmd: crm configure property maintenance-mode=on
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
   when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
@@ -101,7 +101,6 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
-      maintenance="true"
   register: cmd_crm_chrc_output
   changed_when: cmd_crm_chrc_output.rc != 0
   when:
@@ -139,7 +138,6 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
-      maintenance="true"
   register: cmd_crm_chfc_output
   changed_when: cmd_crm_chfc_output.rc != 0
   when:
@@ -188,25 +186,6 @@
   when:
     - migration_threshold != '1000'
 
-- name: Refresh cluster status
-  ansible.builtin.command:
-    cmd: crm configure show
-  register: refreshed_crm_conf_show
-  changed_when: false
-
-# Get current maintenance state
-- name: Set crm facts
-  ansible.builtin.set_fact:
-    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-  changed_when: false
-
-- name: Ensure maintenance mode is disabled
-  ansible.builtin.command:
-    cmd: crm configure property maintenance-mode=false
-  register: cmd_crm_cpmm_output
-  changed_when: cmd_crm_cpmm_output.rc != 0
-  when: refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
-
 # Assume that hana resource needs a cleanup
 # There really should be a way of checking if this needs to be run!
 # Plus the linter doesn't like it!
@@ -214,17 +193,10 @@
   ansible.builtin.command:
     cmd: crm resource cleanup {{ rsc_saphanactl }}
   register: cmd_crm_rcl_output
-  changed_when: cmd_crm_rcl_output.rc != 0
+  changed_when: false
 
 - name: Wait for cluster to settle
   ansible.builtin.command:
     cmd: cs_wait_for_idle -s 5
   register: cmd_cwfi_output
   changed_when: cmd_cwfi_output.rc != 0
-
-# For debug purpose only
-- name: Get cluster status at the end
-  ansible.builtin.command:
-    cmd: crm status full
-  register: final_crm_status_full
-  changed_when: false

@@ -30,7 +30,7 @@
     cmd: >-
       crm configure
       property
-      maintenance-mode=true
+      maintenance-mode=on
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
   when:
@@ -290,58 +290,6 @@
   when:
     - cluster_order | length == 0
 
-
-- name: Refresh cluster status
-  ansible.builtin.command:
-    cmd: >-
-      crm configure
-      show
-  register: refreshed_crm_conf_show
-  changed_when: false
-
-# Get current maintenance state
-- name: Set crm facts
-  ansible.builtin.set_fact:
-    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-  changed_when: false
-
-- name: Ensure maintenance mode is disabled
-  ansible.builtin.command:
-    cmd: >-
-      crm configure
-      property
-      maintenance-mode=false
-  register: cmd_crm_cpmm_output
-  changed_when: cmd_crm_cpmm_output.rc != 0
-  when:
-    - refreshed_crm_maintenance_mode is true or refreshed_crm_maintenance_mode == 'unknown'
-
-- name: Wait for cluster to settle
-  ansible.builtin.command:
-    cmd: >-
-      cs_wait_for_idle -s 5
-  changed_when: false
-
-
-# Assume that hana resource needs a cleanup
-# There really should be a way of checking if this needs to be run!
-# Plus the linter doesn't like it!
-- name: Cleanup of rsc_SAPHanaCtl
-  ansible.builtin.command:
-    cmd: >-
-      crm resource
-      cleanup
-      {{ rsc_saphanactl }}
-  register: cmd_crm_rcl_output
-  changed_when:
-    - cmd_crm_rcl_output.rc != 0
-
-- name: Wait for cluster to settle
-  ansible.builtin.command:
-    cmd: >-
-      cs_wait_for_idle -s 5
-  changed_when: false
-
 - name: Ensure resource-stickiness is configured
   ansible.builtin.command:
     cmd: >-
@@ -363,3 +311,30 @@
   changed_when: cmd_crm_crdmt_output.rc != 0
   when:
     - migration_threshold != '1000'
+
+- name: Disable maintenance mode
+  ansible.builtin.command:
+    cmd: >-
+      crm configure
+      property
+      maintenance-mode=off
+  register: cmd_crm_cpmm_off_output
+  changed_when: false
+
+# Assume that hana resource needs a cleanup
+# There really should be a way of checking if this needs to be run!
+# Plus the linter doesn't like it!
+- name: Cleanup of rsc_SAPHanaCtl
+  ansible.builtin.command:
+    cmd: >-
+      crm resource
+      cleanup
+      {{ rsc_saphanactl }}
+  register: cmd_crm_rcl_output
+  changed_when: false
+
+- name: Wait for cluster to settle
+  ansible.builtin.command:
+    cmd: >-
+      cs_wait_for_idle -s 5
+  changed_when: false

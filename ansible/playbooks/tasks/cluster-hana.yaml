@@ -27,10 +27,13 @@
 
 - name: Ensure maintenance mode is active
   ansible.builtin.command:
-    cmd: crm configure property maintenance-mode=true
+    cmd: crm configure property maintenance-mode=on
   register: cmd_crm_cpmm_output
   changed_when: cmd_crm_cpmm_output.rc != 0
-  when: crm_maintenance_mode is false or crm_maintenance_mode == 'unknown'
+  when:
+    - (refreshed_crm_maintenance_mode is false ) or
+      (refreshed_crm_maintenance_mode == 'off') or
+      (refreshed_crm_maintenance_mode == 'unknown')
 
 - name: Create HANA topology resource
   ansible.builtin.command:
@@ -103,7 +106,6 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
-      maintenance="true"
   register: cmd_crm_chrc_output
   changed_when: cmd_crm_chrc_output.rc != 0
   when:
@@ -141,7 +143,6 @@
       clone-node-max="1"
       target-role="Started"
       interleave="true"
-      maintenance="true"
   register: cmd_crm_chfc_output
   changed_when: cmd_crm_chfc_output.rc != 0
   when:
@@ -192,12 +193,6 @@
   when:
     - cluster_order | length == 0
 
-- name: Wait for cluster to settle
-  ansible.builtin.command:
-    cmd: cs_wait_for_idle -s 5
-  register: cmd_cwfi_output
-  changed_when: cmd_cwfi_output.rc != 0
-
 - name: Ensure resource-stickiness is configured
   ansible.builtin.command:
     cmd: crm configure rsc_defaults resource-stickiness=1000
@@ -214,28 +209,6 @@
   when:
     - migration_threshold != '1000'
 
-# For debug purpose only
-# Get current maintenance state
-- name: Refresh cluster status
-  ansible.builtin.command:
-    cmd: crm configure show
-  register: refreshed_crm_conf_show
-  changed_when: false
-
-- name: Set crm facts
-  ansible.builtin.set_fact:
-    refreshed_crm_maintenance_mode: "{{ (refreshed_crm_conf_show.stdout | regex_search('maintenance-mode=([a-z]*)', '\\1'))[0] | default('unknown') }}"
-  changed_when: false
-
-- name: Ensure maintenance mode is disabled
-  ansible.builtin.command:
-    cmd: crm configure property maintenance-mode=false
-  register: cmd_crm_cpmm_output
-  changed_when: cmd_crm_cpmm_output.rc != 0
-  when:
-    - (refreshed_crm_maintenance_mode is true ) or
-      (refreshed_crm_maintenance_mode == 'unknown')
-
 - name: Get cluster state
   ansible.builtin.command:
     cmd: crm status
@@ -244,7 +217,9 @@
 
 - name: Cleanup if needed
   ansible.builtin.command:
-    cmd: "crm resource cleanup {{ rsc_saphanactl }}"
+    cmd: >-
+      crm resource cleanup
+      {{ rsc_saphanactl }}
   retries: 3
   delay: 10
   register: cmd_crm_rcl_output
@@ -252,9 +227,8 @@
   when:
     - final_reg_crm_status.stdout | regex_search('Failed Resource Actions') | trim | length != 0
 
-# For debug purpose only
-- name: Get cluster status at the end
+- name: Wait for cluster to settle
   ansible.builtin.command:
-    cmd: crm configure show
-  register: final_crm_conf_show
-  changed_when: false
+    cmd: cs_wait_for_idle -s 5
+  register: cmd_cwfi_output
+  changed_when: cmd_cwfi_output.rc != 0
