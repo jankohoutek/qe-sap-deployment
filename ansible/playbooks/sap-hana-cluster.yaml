@@ -102,10 +102,10 @@
         stonith_enabled: "{{ (crm_conf_show_after.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
         stonith_timeout: "{{ crm_conf_show_after.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
         hana_resource: "{{ crm_conf_show_after.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
-        hana_clone: "{{ crm_conf_show_after.stdout | regex_search('ms ms._SAPHanaCtl_') }}"
+        hana_clone: "{{ crm_conf_show_after.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
         hana_topology_resource: "{{ crm_conf_show_after.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
         hana_topology_clone: "{{ crm_conf_show_after.stdout | regex_search('clone cln_SAPHanaTpg') }}"
-        hana_filesystem_resource: "{{ crm_conf_show_after.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
+        hana_filesystem_resource: "{{ crm_conf_show_after.stdout ex_search('primitive rsc_SAPHanaFil_') }}"
         hana_filesystem_clone: "{{ crm_conf_show_after.stdout | regex_search('primitive cln_SAPHanaFil_') }}"
         ip_resource: "{{ crm_conf_show_after.stdout | regex_search('primitive rsc_ip_') }}"
         ip_nc: "{{ crm_conf_show_after.stdout | regex_search('primitive rsc_socat_') }}"
@@ -115,6 +115,8 @@
         resource_stickiness: "{{ (crm_conf_show_after.stdout | regex_search('resource-stickiness=([0-9]*)', '\\1'))[0] }}"
         migration_threshold: "{{ (crm_conf_show_after.stdout | regex_search('migration-threshold=([0-9]*)', '\\1'))[0] }}"
       changed_when: false
+      when:
+        - is_primary
 
     - name: Ensure maintenance mode is disabled
       ansible.builtin.command:

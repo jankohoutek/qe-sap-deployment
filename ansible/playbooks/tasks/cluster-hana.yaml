@@ -11,7 +11,7 @@
     stonith_enabled: "{{ (crm_conf_show.stdout | regex_search('stonith-enabled=([a-z]*)', '\\1'))[0] | default('false') }}"
     stonith_timeout: "{{ crm_conf_show.stdout | regex_search('stonith-timeout') }}"  # this should be variable!
     hana_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaCtl_') }}"
-    hana_clone: "{{ crm_conf_show.stdout | regex_search('ms ms._SAPHanaCtl_') }}"
+    hana_clone: "{{ crm_conf_show.stdout | regex_search('ms ms(.)_SAPHanaCtl_') }}"
     hana_topology_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaTpg') }}"
     hana_topology_clone: "{{ crm_conf_show.stdout | regex_search('clone cln_SAPHanaTpg') }}"
     hana_filesystem_resource: "{{ crm_conf_show.stdout | regex_search('primitive rsc_SAPHanaFil_') }}"
