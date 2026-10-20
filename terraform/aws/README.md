@@ -65,6 +65,24 @@ For detailed information and deployment options have a look at `terraform.tfvars
 
     **Note**: All tests so far with this configuration have been done with only the keys stored in the credentials files, and the region being passed as a variable.
 
+    **Important: the credentials must be present as files on the machine that runs the deployment.**
+
+    Terraform resolves AWS credentials with the standard resolution order
+    (environment variables, `~/.aws/credentials`, or an IAM role). After the
+    infrastructure is created, the deployment copies `~/.aws/credentials` and
+    `~/.aws/config` from that machine onto every cluster node. This copy is
+    done by the `sap-hana-cluster` playbook and is required for the cluster
+    fencing and floating-IP agents, which call the AWS API from the nodes.
+
+    Because of this copy:
+
+    * The machine that runs the deployment must have a `~/.aws/credentials`
+      file. Environment variables alone are not enough, because they cannot
+      be copied to the nodes.
+    * Terraform does not create or attach an IAM role or instance profile to
+      the instances. The copied credentials file is what the fencing and
+      floating-IP agents use on the nodes.
+
     * AWS user authorizations
 
     In order to execute the deployment properly using terraform, the used user must have some policies enabled. Mostly, it needs access to manage EC2 instances, S3 buckets, IAM (to create roles and policies) and EFS storage.
